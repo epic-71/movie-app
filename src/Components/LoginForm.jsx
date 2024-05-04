@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import Button from "./Button";
 import Input from "./Input";
 import { useDispatch, useSelector } from "react-redux";
@@ -9,67 +9,82 @@ function LoginForm() {
   const [email, setEmail] = useState();
   const [password, setPassword] = useState();
   const dispatch = useDispatch();
-
+  const [touched, setTouched] = useState({});
+const promise=Promise
+console.log(promise)
   const [emailError, setEmailError] = useState();
   const [passwordError, setPasswordError] = useState();
   const existingUsers = useSelector((s) => s.user);
-  console.log(existingUsers)
+
   const navigate = useNavigate();
 
   const emailRef = useRef(null);
   const passwordRef = useRef(null);
 
-  const validEmail =
-    /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
-  const validPassword =
-    /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{6,16}$/;
+  const validEmail = useMemo(
+    () =>
+      /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/,
+    []
+  );
+  const validPassword = useMemo(
+    () => /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{6,16}$/,
+    []
+  );
 
-  const handleBlur = (e) => {
-    if (e.target.id === "email") {
-      const value = emailRef.current.value;
-      setEmail(value);
-      if (value && !value.match(validEmail)) {
-        setEmailError("Email not valid");
+  const handleBlur = useCallback(
+    (e) => {
+      if (e.target.id === "email") {
+        setTouched({ ...touched, email: true });
+        const value = emailRef.current.value;
+        setEmail(value);
+        if (value && !value.match(validEmail)) {
+          setEmailError("Email not valid");
+        }
       }
-    }
-    if (e.target.id === "password") {
-      const value = passwordRef.current.value;
-      setPassword(value);
-      if (value && !value.match(validPassword)) {
-        setPasswordError("Password Error");
-      } else {
-        setPasswordError("");
+      if (e.target.id === "password") {
+        setTouched({ ...touched, password: true });
+        const value = passwordRef.current.value;
+        setPassword(value);
+        if (value && !value.match(validPassword)) {
+          setPasswordError("Password Error");
+        } else {
+          setPasswordError("");
+        }
       }
-    }
-  };
+    },
+    [validEmail, validPassword, touched]
+  );
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = useCallback(
+    (e) => {
+      e.preventDefault();
 
-    console.log(existingUsers);
+      console.log(existingUsers);
 
-    if (!email || !password) return;
+      if (!email || !password) return;
 
-    const isUserExists = existingUsers.find((user) => user.email === email);
+      const isUserExists = existingUsers.find((user) => user.email === email);
 
-    if (!isUserExists) {
-      alert("no user exists");
-      return;
-    }
+      if (!isUserExists) {
+        alert("no user exists");
+        return;
+      }
 
-    if (isUserExists.password !== password) {
-      alert("invalid password");
-      return;
-    }
+      if (isUserExists.password !== password) {
+        alert("invalid password");
+        return;
+      }
 
-    dispatch(storeLoggedUser(isUserExists));
+      dispatch(storeLoggedUser(isUserExists));
 
-    if (isUserExists.role === "user") {
-      navigate("/");
-    } else if (isUserExists.role === "admin") {
-      navigate("/admin/");
-    }
-  };
+      if (isUserExists.role === "user") {
+        navigate("/");
+      } else if (isUserExists.role === "admin") {
+        navigate("/admin/");
+      }
+    },
+    [dispatch, email, existingUsers, navigate, password]
+  );
   return (
     <form className="w-[80%] laptop:w-[50%] h-[60%] mt-20 p-8  rounded-lg flex flex-col gap-2 ">
       <h1 className="font-bold text-2xl text-center laptop:text-3xl">Login</h1>
@@ -82,16 +97,18 @@ function LoginForm() {
         error={emailError}
         div_width={100}
         div_height={25}
+        touched={touched.email}
       />
       <Input
         id="password"
-        type="text"
+        type="password"
         label="Password"
         refe={passwordRef}
         onHandleBlur={handleBlur}
         error={passwordError}
         div_width={100}
         div_height={25}
+        touched={touched.password}
       />
       <Button onHandleSubmit={handleSubmit} bold={true}>
         Login

@@ -8,6 +8,7 @@ export const loggedUserSlice = createSlice({
   reducers: {
     storeLoggedUser: (state, action) => {
       localStorage.setItem("loggedUser", JSON.stringify(action.payload));
+      return action.payload;
     },
   },
 });
